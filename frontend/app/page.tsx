@@ -1,12 +1,10 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-
 type Task = { id:number; subject:string; time:string; duration:string; status: 'pending' | 'completed' | 'missed', date: string, reason?: string };
 
 export default function SmartScheduler() {
   const API_URL = "https://smart-study-scheduler-backend-qtpe.onrender.com";
   const [tasks, setTasks] = useState<Task[]>([]);
-  
   const [sub, setSub] = useState("");
   const [timeHour, setTimeHour] = useState("10");
   const [timeMin, setTimeMin] = useState("00");
@@ -14,11 +12,9 @@ export default function SmartScheduler() {
   const [dur, setDur] = useState("2 hours");
   const [notif, setNotif] = useState<string|null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
-
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewDate, setViewDate] = useState(new Date());
   const selectedDateStr = selectedDate.toDateString();
-
   const [pomodoroTime, setPomodoroTime] = useState(25 * 60);
   const [initialTime, setInitialTime] = useState(25 * 60);
   const [isRunning, setIsRunning] = useState(false);
@@ -26,23 +22,18 @@ export default function SmartScheduler() {
   const [currentFocusTask, setCurrentFocusTask] = useState<Task | null>(null);
   const [isEditingTimer, setIsEditingTimer] = useState(false);
   const [editMins, setEditMins] = useState("25");
-
   const [showCelebration, setShowCelebration] = useState(false);
   const [quote, setQuote] = useState("");
   const quotes = ["🔥 Booom! Ek aur jeet!","💪 Consistency is power.","🚀 Small wins = Big placements.","🎯 Focus ka boss! FAANG pakka hai!","⚡ Discipline > Motivation."];
 
-  // NEW FOCUS MODE - cream minimal new tab
   const startFocusMode = (task: Task) => {
-    localStorage.setItem("focus_task", JSON.stringify(task));
-    window.open("/focus", "_blank");
-  };
+    localStorage.setItem("focus_task", JSON.stringify(task))
+    window.open("/focus", "_blank")
+  }
 
-  // LOAD
   useEffect(()=>{
     const saved = localStorage.getItem("smart_tasks");
-    if(saved){
-      try{ setTasks(JSON.parse(saved)); }catch(e){}
-    }
+    if(saved){ try{ setTasks(JSON.parse(saved)); }catch(e){} }
     fetch(`${API_URL}/api/tasks`).then(r=>r.json()).then(d=>{
       if(Array.isArray(d) && d.length>0){
         const mapped = d.map((t:any)=>({...t, status: t.status || 'pending', date: t.date || new Date().toDateString()}));
@@ -52,9 +43,7 @@ export default function SmartScheduler() {
     if(typeof Notification!== "undefined" && Notification.permission!== "granted") Notification.requestPermission();
   },[]);
 
-  useEffect(()=>{
-    localStorage.setItem("smart_tasks", JSON.stringify(tasks));
-  },[tasks]);
+  useEffect(()=>{ localStorage.setItem("smart_tasks", JSON.stringify(tasks)); },[tasks]);
 
   useEffect(() => {
     let interval: any;
@@ -105,109 +94,82 @@ export default function SmartScheduler() {
     setPomodoroTime(initialTime);
     showNotify(`▶ Focusing: ${task.subject}`);
   };
-
   const updateStatus = (id:number, status:'completed'|'missed', reason?:string) => {
-    if (status === 'completed') {
-      setQuote(quotes[Math.floor(Math.random() * quotes.length)]);
-      setShowCelebration(true);
-      setTimeout(() => setShowCelebration(false), 3500);
-    }
+    if (status === 'completed') { setQuote(quotes[Math.floor(Math.random() * quotes.length)]); setShowCelebration(true); setTimeout(() => setShowCelebration(false), 3500); }
     setTasks(tasks.map(t=> t.id===id? {...t, status, reason} : t));
   };
-
-  const deleteTask = async (id:number) => {
-    setTasks(tasks.filter(t=>t.id!==id));
-    try{ await fetch(`${API_URL}/api/delete_task/${id}`, {method:"DELETE"}); }catch(e){}
-  };
-
-  const adjustTimer = (mins: number) => {
-    if(isRunning) return;
-    const newTime = Math.max(1*60, Math.min(120*60, pomodoroTime + mins*60));
-    setPomodoroTime(newTime);
-    if(!isBreak) setInitialTime(newTime);
-  };
-
-  const handleManualTimerSave = () => {
-    const mins = parseInt(editMins);
-    if(!isNaN(mins) && mins >=1 && mins <=120){
-      setPomodoroTime(mins*60);
-      setInitialTime(mins*60);
-    }
-    setIsEditingTimer(false);
-  };
-
+  const deleteTask = async (id:number) => { setTasks(tasks.filter(t=>t.id!==id)); try{ await fetch(`${API_URL}/api/delete_task/${id}`, {method:"DELETE"}); }catch(e){} };
+  const adjustTimer = (mins: number) => { if(isRunning) return; const newTime = Math.max(1*60, Math.min(120*60, pomodoroTime + mins*60)); setPomodoroTime(newTime); if(!isBreak) setInitialTime(newTime); };
+  const handleManualTimerSave = () => { const mins = parseInt(editMins); if(!isNaN(mins) && mins >=1 && mins <=120){ setPomodoroTime(mins*60); setInitialTime(mins*60); } setIsEditingTimer(false); };
   const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
   const changeMonth = (delta: number) => setViewDate(prev => { const d = new Date(prev); d.setMonth(prev.getMonth()+delta); return d; });
   const changeYear = (delta: number) => setViewDate(prev => { const d = new Date(prev); d.setFullYear(prev.getFullYear()+delta); return d; });
-
   const filteredTasks = tasks.filter(t => t.date === selectedDateStr);
 
   return (
     <div className="bg-[#050711] text-white min-h-screen perspective-[2000px]">
       <nav className="flex justify-between items-center p-4 border-b border-white/10 sticky top-0 bg-[#080A14]/80 backdrop-blur-md z-10">
-        <h1 className="text-xl font-black tracking-wider">SMART STUDY SCHEDULER <span className="bg-[#6C5CE7] text-xs px-2 py-1 rounded ml-2">PRO</span></h1>
+        <h1 className="text-xl font-black tracking-wider hover:scale-105 transition-transform cursor-default">SMART STUDY SCHEDULER <span className="bg-[#6C5CE7] text-xs px-2 py-1 rounded ml-2 animate-pulse">PRO</span></h1>
         <div className="flex gap-3">
-          <button onClick={()=>{const now=new Date(); setSelectedDate(now); setViewDate(now);}} className="px-5 py-2 bg-white/10 rounded-full">Today</button>
-          <button onClick={()=>{setIsRunning(true); setIsBreak(false);}} className="px-5 py-2 bg-gradient-to-r from-[#6C5CE7] to-[#A855F7] rounded-full font-bold">Start Focus</button>
+          <button onClick={()=>{const now=new Date(); setSelectedDate(now); setViewDate(now);}} className="px-5 py-2 bg-white/10 rounded-full hover:bg-white hover:text-black hover:scale-110 hover:shadow-[0_0_20px_white] active:scale-95 transition-all duration-300 cursor-pointer">Today</button>
+          <button onClick={()=>{setIsRunning(true); setIsBreak(false);}} className="px-5 py-2 bg-gradient-to-r from-[#6C5CE7] to-[#A855F7] rounded-full font-bold hover:scale-110 hover:shadow-[0_0_25px_#6C5CE7] active:scale-90 transition-all duration-300 cursor-pointer">Start Focus</button>
         </div>
       </nav>
-
-      {notif && <div className="fixed top-20 right-5 bg-[#6C5CE7] px-6 py-3 rounded-xl z-50">{notif}</div>}
+      {notif && <div className="fixed top-20 right-5 bg-[#6C5CE7] px-6 py-3 rounded-xl shadow-[0_0_30px_#6C5CE7] animate-bounce z-50">{notif}</div>}
       <audio ref={audioRef} src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" />
-      {showCelebration && (<div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100]"><div className="bg-gradient-to-br from-[#6C5CE7] to-[#A855F7] p-8 rounded-3xl text-center max-w-sm mx-4"><div className="text-6xl mb-4">🎉</div><h2 className="text-2xl font-black mb-2">CONGRATULATIONS!</h2><p className="font-semibold">{quote}</p><button onClick={()=>setShowCelebration(false)} className="mt-6 px-6 py-2 bg-white text-black rounded-full font-bold">Let's Go!</button></div></div>)}
-
+      {showCelebration && (<div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[100]"><div className="bg-gradient-to-br from-[#6C5CE7] to-[#A855F7] p-8 rounded-3xl text-center animate-bounce shadow-[0_0_50px_#6C5CE7] max-w-sm mx-4"><div className="text-6xl mb-4">🎉</div><h2 className="text-2xl font-black mb-2">CONGRATULATIONS!</h2><p className="font-semibold">{quote}</p><button onClick={()=>setShowCelebration(false)} className="mt-6 px-6 py-2 bg-white text-black rounded-full font-bold hover:scale-110 transition-all">Let's Go!</button></div></div>)}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 p-6 max-w-[1600px] mx-auto">
-        <div className="lg:col-span-3 bg-[#121424] p-5 rounded-2xl border border-white/5 h-fit">
-          <h2 className="font-bold mb-2">+ Add for</h2>
+        <div className="lg:col-span-3 bg-[#121424] p-5 rounded-2xl border border-white/5 h-fit transition-all duration-500 hover:border-[#6C5CE7]/50 hover:shadow-[0_20px_60px_-15px_rgba(108,92,231,0.5)] hover:-translate-y-2 hover:rotate-[0.5deg] hover:scale-[1.02] group">
+          <h2 className="font-bold mb-2 group-hover:text-[#6C5CE7] transition-colors">+ Add for</h2>
           <p className="text-xs text-[#6C5CE7] font-bold mb-3">{selectedDate.toLocaleDateString('en-IN', {weekday:'short', day:'numeric', month:'short', year:'numeric'})}</p>
-          <input value={sub} onChange={e=>setSub(e.target.value)} placeholder="Subject e.g. Python" className="w-full bg-black/50 p-3 rounded-lg mb-3 border border-white/10 outline-none" />
+          <input value={sub} onChange={e=>setSub(e.target.value)} placeholder="Subject e.g. Python" className="w-full bg-black/50 p-3 rounded-lg mb-3 border border-white/10 outline-none focus:border-[#6C5CE7] focus:shadow-[0_0_15px_#6C5CE7] focus:scale-[1.02] transition-all cursor-text" />
           <div className="flex gap-2 mb-3">
-            <div className="flex gap-1 w-[60%] bg-black/50 p-2 rounded-lg border border-white/10 items-center">
-              <select value={timeHour} onChange={e=>setTimeHour(e.target.value)} className="bg-transparent outline-none w-1/3 text-center">{Array.from({length:12},(_,i)=>{const h=i+1; const val=String(h).padStart(2,'0'); return <option key={h} value={val} className="text-black">{val}</option>})}</select>
+            <div className="flex gap-1 w-[60%] bg-black/50 p-2 rounded-lg border border-white/10 items-center hover:border-[#6C5CE7]/30 transition-all">
+              <select value={timeHour} onChange={e=>setTimeHour(e.target.value)} className="bg-transparent outline-none w-1/3 text-center cursor-pointer hover:text-[#6C5CE7]">{Array.from({length:12},(_,i)=>{const h=i+1; const val=String(h).padStart(2,'0'); return <option key={h} value={val} className="text-black">{val}</option>})}</select>
               <span>:</span>
-              <select value={timeMin} onChange={e=>setTimeMin(e.target.value)} className="bg-transparent outline-none w-1/3 text-center">{["00","15","30","45"].map(m=><option key={m} value={m} className="text-black">{m}</option>)}</select>
-              <select value={ampm} onChange={e=>setAmPm(e.target.value)} className="bg-[#6C5CE7] rounded-md px-2 py-1 font-bold ml-1"><option value="AM" className="text-black">AM</option><option value="PM" className="text-black">PM</option></select>
+              <select value={timeMin} onChange={e=>setTimeMin(e.target.value)} className="bg-transparent outline-none w-1/3 text-center cursor-pointer hover:text-[#6C5CE7]">{["00","15","30","45"].map(m=><option key={m} value={m} className="text-black">{m}</option>)}</select>
+              <select value={ampm} onChange={e=>setAmPm(e.target.value)} className="bg-[#6C5CE7] rounded-md px-2 py-1 font-bold ml-1 cursor-pointer hover:scale-110 active:scale-90 transition-all"><option value="AM" className="text-black">AM</option><option value="PM" className="text-black">PM</option></select>
             </div>
-            <input value={dur} onChange={e=>setDur(e.target.value)} placeholder="2 hours" className="w-[40%] bg-black/50 p-3 rounded-lg border border-white/10" />
+            <input value={dur} onChange={e=>setDur(e.target.value)} placeholder="2 hours" className="w-[40%] bg-black/50 p-3 rounded-lg border border-white/10 focus:border-[#6C5CE7] transition-all cursor-text" />
           </div>
-          <button onClick={addTask} className="w-full py-3 bg-[#6C5CE7] rounded-xl font-bold">Add Task + Reminder</button>
+          <button onClick={addTask} className="w-full py-3 bg-[#6C5CE7] rounded-xl font-bold hover:scale-[1.05] hover:shadow-[0_0_30px_#6C5CE7] hover:brightness-125 active:scale-95 active:shadow-[0_0_10px_#6C5CE7] transition-all duration-300 cursor-pointer">Add Task + Reminder</button>
         </div>
 
-        <div className="lg:col-span-6 bg-[#121424] p-5 rounded-2xl border border-white/5 min-h-[500px]">
-          <h2 className="font-bold text-xl mb-1">Study Schedule - {selectedDate.toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric'})}</h2>
+        <div className="lg:col-span-6 bg-[#121424] p-5 rounded-2xl border border-white/5 min-h-[500px] transition-all duration-500 hover:border-emerald-500/40 hover:shadow-[0_20px_60px_-15px_rgba(16,185,129,0.4)] hover:-translate-y-2 hover:scale-[1.01] group">
+          <h2 className="font-bold text-xl mb-1 group-hover:text-emerald-400 transition-colors">Study Schedule - {selectedDate.toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric', year:'numeric'})}</h2>
           <p className="text-sm text-gray-400 mb-5">{filteredTasks.length} tasks for this date</p>
           <div className="space-y-3">
-            {filteredTasks.length === 0 && <div className="text-center py-10 text-gray-500">📅 No tasks for this date</div>}
+            {filteredTasks.length === 0 && <div className="text-center py-10 text-gray-500 hover:text-white transition-colors">📅 No tasks for this date</div>}
             {filteredTasks.map(t=>(
-              <div key={t.id} className={`p-4 rounded-xl flex justify-between items-center border-l-4 bg-black/30 ${t.status==='completed'?'border-green-500 opacity-60': t.status==='missed'?'border-red-500':'border-[#6C5CE7]'}`}>
+              <div key={t.id} className={`p-4 rounded-xl flex justify-between items-center border-l-4 bg-black/30 transition-all duration-300 hover:scale-[1.03] hover:shadow-[0_10px_30px_rgba(0,0,0,0.5)] hover:-translate-y-1 cursor-pointer active:scale-[0.98] ${t.status==='completed'?'border-green-500 opacity-60 hover:opacity-80': t.status==='missed'?'border-red-500':'border-[#6C5CE7] hover:border-emerald-400'}`}>
                 <div><p className={`font-bold ${t.status==='completed'?'line-through':''}`}>{t.subject}</p><p className="text-sm text-gray-400">{t.time} • {t.duration} • {t.status}</p></div>
                 <div className="flex gap-2 flex-wrap justify-end max-w-[70%]">
                   {t.status==='pending' && <>
-                    <button onClick={()=>startFocusMode(t)} className="px-3 py-1 bg-[#FFF8E7] text-black rounded-full text-xs font-bold border hover:scale-110 transition-all">🍦 Focus Tab</button>
-                    <button onClick={()=>startFocusingTask(t)} className="px-3 py-1 bg-gradient-to-r from-[#6C5CE7] to-[#A855F7] rounded-full text-xs font-bold">▶ Focus</button>
-                    <button onClick={()=>updateStatus(t.id,'completed')} className="px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-xs">✓ Complete</button>
+                    <button onClick={()=>startFocusMode(t)} className="px-3 py-1 bg-[#FFF8E7] text-black rounded-full text-xs font-bold border hover:scale-125 hover:shadow-[0_0_15px_white] active:scale-90 transition-all cursor-pointer">🍦 Focus Tab</button>
+                    <button onClick={()=>startFocusingTask(t)} className="px-3 py-1 bg-gradient-to-r from-[#6C5CE7] to-[#A855F7] rounded-full text-xs font-bold hover:scale-125 hover:shadow-[0_0_15px_#6C5CE7] active:scale-90 transition-all cursor-pointer">▶ Focus</button>
+                    <button onClick={()=>updateStatus(t.id,'completed')} className="px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-xs hover:bg-green-500 hover:text-white hover:scale-125 active:scale-90 transition-all cursor-pointer">✓ Complete</button>
                   </>}
-                  <button onClick={()=>deleteTask(t.id)} className="px-3 py-1 bg-white/10 rounded-full text-xs">🗑 Delete</button>
+                  <button onClick={()=>deleteTask(t.id)} className="px-3 py-1 bg-white/10 rounded-full text-xs hover:bg-red-600 hover:scale-125 active:scale-90 transition-all cursor-pointer">🗑 Delete</button>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="lg:col-span-3 bg-[#121424] p-5 rounded-2xl border border-white/5 h-fit">
-           <div className="flex justify-between items-center mb-4 gap-1">
-            <button onClick={()=>changeYear(-1)} className="px-2.5 py-1.5 bg-white/10 rounded-full">«</button>
-            <button onClick={()=>changeMonth(-1)} className="px-3 py-1.5 bg-white/10 rounded-full">‹</button>
+        <div className="lg:col-span-3 bg-[#121424] p-5 rounded-2xl border border-white/5 h-fit transition-all duration-500 hover:border-orange-500/40 hover:shadow-[0_20px_60px_-15px_rgba(249,115,22,0.4)] hover:-translate-y-2 hover:rotate-[-0.5deg] hover:scale-[1.02] group">
+          <div className="flex justify-between items-center mb-4 gap-1">
+            <button onClick={()=>changeYear(-1)} className="px-2.5 py-1.5 bg-white/10 rounded-full hover:bg-orange-500 hover:text-white hover:scale-125 hover:shadow-[0_0_15px_orange] active:scale-75 transition-all cursor-pointer">«</button>
+            <button onClick={()=>changeMonth(-1)} className="px-3 py-1.5 bg-white/10 rounded-full hover:bg-orange-500 hover:text-white hover:scale-125 active:scale-75 transition-all cursor-pointer">‹</button>
             <div className="text-center flex gap-1">
-              <select value={viewDate.getMonth()} onChange={e=>{const d=new Date(viewDate); d.setMonth(parseInt(e.target.value)); setViewDate(d);}} className="bg-[#1E213A] border border-orange-500/30 font-bold text-sm px-2 py-1.5 rounded-lg">
+              <select value={viewDate.getMonth()} onChange={e=>{const d=new Date(viewDate); d.setMonth(parseInt(e.target.value)); setViewDate(d);}} className="bg-[#1E213A] border border-orange-500/30 font-bold text-sm outline-none cursor-pointer text-white px-2 py-1.5 rounded-lg hover:border-orange-400 hover:shadow-[0_0_10px_orange] transition-all">
                 {months.map((m,i)=><option key={m} value={i} className="bg-white text-black">{m}</option>)}
               </select>
-              <select value={viewDate.getFullYear()} onChange={e=>{const d=new Date(viewDate); d.setFullYear(parseInt(e.target.value)); setViewDate(d);}} className="bg-[#1E213A] border border-orange-500/30 font-bold text-sm px-2 py-1.5 rounded-lg ml-1">
+              <select value={viewDate.getFullYear()} onChange={e=>{const d=new Date(viewDate); d.setFullYear(parseInt(e.target.value)); setViewDate(d);}} className="bg-[#1E213A] border border-orange-500/30 font-bold text-sm outline-none cursor-pointer text-white px-2 py-1.5 rounded-lg ml-1 hover:border-orange-400 transition-all">
                 {Array.from({length: 10}, (_,i)=> new Date().getFullYear()-2 + i).map(y=><option key={y} value={y} className="bg-white text-black">{y}</option>)}
               </select>
             </div>
-            <button onClick={()=>changeMonth(1)} className="px-3 py-1.5 bg-white/10 rounded-full">›</button>
-            <button onClick={()=>changeYear(1)} className="px-2.5 py-1.5 bg-white/10 rounded-full">»</button>
+            <button onClick={()=>changeMonth(1)} className="px-3 py-1.5 bg-white/10 rounded-full hover:bg-orange-500 hover:text-white hover:scale-125 active:scale-75 transition-all cursor-pointer">›</button>
+            <button onClick={()=>changeYear(1)} className="px-2.5 py-1.5 bg-white/10 rounded-full hover:bg-orange-500 hover:text-white hover:scale-125 hover:shadow-[0_0_15px_orange] active:scale-75 transition-all cursor-pointer">»</button>
           </div>
           <div className="grid grid-cols-7 gap-1 text-[11px] text-center text-white/70 mb-2 font-bold"><div>Su</div><div>Mo</div><div>Tu</div><div>We</div><div>Th</div><div>Fr</div><div>Sa</div></div>
           <div className="grid grid-cols-7 gap-1.5 text-[13px] text-center">
@@ -221,9 +183,12 @@ export default function SmartScheduler() {
               const hasTasks = tasks.some(t=>t.date === dateStr);
               return (
                 <div key={day} onClick={()=>setSelectedDate(dateObj)}
-                className={`p-2 rounded-lg cursor-pointer font-bold relative ${isSelected? 'bg-[#6C5CE7] text-white': isToday? 'bg-white text-black': 'bg-white/[0.07] hover:bg-orange-500'}`}>
+                className={`p-2 rounded-lg cursor-pointer transition-all duration-300 font-bold relative hover:z-10
+                  ${isSelected? 'bg-[#6C5CE7] text-white font-black scale-110 shadow-[0_0_20px_#6C5CE7] border border-white/20'
+                  : isToday? 'bg-white text-black font-black ring-2 ring-orange-400 shadow-[0_0_15px_white] scale-105'
+                  : 'bg-white/[0.07] text-[#F3F4F6] hover:bg-orange-500 hover:text-white hover:scale-[1.4] hover:shadow-[0_0_20px_orange] hover:-translate-y-1 border border-white/10 active:scale-90'}`}>
                   {day}
-                  {hasTasks &&!isSelected && <div className="w-1.5 h-1.5 bg-orange-400 rounded-full mx-auto mt-1"></div>}
+                  {hasTasks &&!isSelected && <div className="w-1.5 h-1.5 bg-orange-400 rounded-full mx-auto mt-1 animate-pulse"></div>}
                 </div>
               )
             })}
