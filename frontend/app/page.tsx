@@ -30,10 +30,25 @@ export default function SmartScheduler() {
   const [quote, setQuote] = useState("");
   const quotes = ["🔥 Booom! Ek aur jeet!","💪 Consistency is power.","🚀 Small wins = Big placements.","🎯 Focus ka boss! FAANG pakka hai!","⚡ Discipline > Motivation."];
 
+  // LOAD - pehle localStorage se, fir backend se
   useEffect(()=>{
-    fetch("http://${API_URL}/api/schedule").then(r=>r.json()).then(d=>{ if(d.tasks) setTasks(d.tasks.map((t:any)=>({...t, status:'pending', date: new Date().toDateString()}))) });
+    const saved = localStorage.getItem("smart_tasks");
+    if(saved){
+      try{ setTasks(JSON.parse(saved)); }catch(e){}
+    }
+    fetch(`${API_URL}/api/tasks`).then(r=>r.json()).then(d=>{
+      if(Array.isArray(d) && d.length>0){
+        const mapped = d.map((t:any)=>({...t, status: t.status || 'pending', date: t.date || new Date().toDateString()}));
+        setTasks(mapped);
+      }
+    }).catch(()=>{});
     if(typeof Notification!== "undefined" && Notification.permission!== "granted") Notification.requestPermission();
   },[]);
+
+  // SAVE - har baar tasks change pe localStorage me save
+  useEffect(()=>{
+    localStorage.setItem("smart_tasks", JSON.stringify(tasks));
+  },[tasks]);
 
   useEffect(() => {
     let interval: any;
@@ -67,12 +82,12 @@ export default function SmartScheduler() {
     if(!sub) return;
     const finalTime = `${timeHour}:${timeMin} ${ampm}`;
     const newTask: Task = {id: Date.now(), subject:sub, time: finalTime, duration:dur, status:'pending', date: selectedDateStr};
+    setTasks([...tasks, newTask]); // pehle UI me dikha
     try{
-      const res = await fetch("http://${API_URL}/api/add_task", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({subject:sub, time: finalTime, duration:dur, date: selectedDateStr}) });
+      const res = await fetch(`${API_URL}/api/add_task`, { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({subject:sub, time: finalTime, duration:dur, date: selectedDateStr}) });
       const data = await res.json();
-      newTask.id = data.id || newTask.id;
+      if(data.id) setTasks(prev => prev.map(t=> t.id===newTask.id? {...t, id:data.id}: t));
     }catch(e){}
-    setTasks([...tasks, newTask]);
     setSub("");
     showNotify(`Added for ${selectedDate.toLocaleDateString()}: ${sub}`);
   };
@@ -95,8 +110,8 @@ export default function SmartScheduler() {
   };
 
   const deleteTask = async (id:number) => {
-    try{ await fetch(`http://${API_URL}/api/delete_task/${id}`, {method:"DELETE"}); }catch(e){}
     setTasks(tasks.filter(t=>t.id!==id));
+    try{ await fetch(`${API_URL}/api/delete_task/${id}`, {method:"DELETE"}); }catch(e){}
   };
 
   const adjustTimer = (mins: number) => {
@@ -123,7 +138,6 @@ export default function SmartScheduler() {
 
   return (
     <div className="bg-[#050711] text-white min-h-screen perspective-[2000px]">
-      {/* NAV with 3D */}
       <nav className="flex justify-between items-center p-4 border-b border-white/10 sticky top-0 bg-[#080A14]/80 backdrop-blur-md z-10">
         <h1 className="text-xl font-black tracking-wider hover:scale-105 transition-transform cursor-default">SMART STUDY SCHEDULER <span className="bg-[#6C5CE7] text-xs px-2 py-1 rounded ml-2 animate-pulse">PRO</span></h1>
         <div className="flex gap-3">
@@ -137,8 +151,6 @@ export default function SmartScheduler() {
       {showCelebration && (<div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[100]"><div className="bg-gradient-to-br from-[#6C5CE7] to-[#A855F7] p-8 rounded-3xl text-center animate-bounce shadow-[0_0_50px_#6C5CE7] max-w-sm mx-4"><div className="text-6xl mb-4">🎉</div><h2 className="text-2xl font-black mb-2">CONGRATULATIONS!</h2><p className="font-semibold">{quote}</p><button onClick={()=>setShowCelebration(false)} className="mt-6 px-6 py-2 bg-white text-black rounded-full font-bold hover:scale-110 transition-all">Let's Go!</button></div></div>)}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 p-6 max-w-[1600px] mx-auto">
-
-        {/* 1. ADD FOR SECTION - PURPLE 3D */}
         <div className="lg:col-span-3 bg-[#121424] p-5 rounded-2xl border border-white/5 h-fit transition-all duration-500 hover:border-[#6C5CE7]/50 hover:shadow-[0_20px_60px_-15px_rgba(108,92,231,0.5)] hover:-translate-y-2 hover:rotate-[0.5deg] hover:scale-[1.02] group">
           <h2 className="font-bold mb-2 group-hover:text-[#6C5CE7] transition-colors">+ Add for</h2>
           <p className="text-xs text-[#6C5CE7] font-bold mb-3">{selectedDate.toLocaleDateString('en-IN', {weekday:'short', day:'numeric', month:'short', year:'numeric'})}</p>
@@ -174,7 +186,6 @@ export default function SmartScheduler() {
           </div>
         </div>
 
-        {/* 2. STUDY SCHEDULE - EMERALD/BLUE 3D */}
         <div className="lg:col-span-6 bg-[#121424] p-5 rounded-2xl border border-white/5 min-h-[500px] transition-all duration-500 hover:border-emerald-500/40 hover:shadow-[0_20px_60px_-15px_rgba(16,185,129,0.4)] hover:-translate-y-2 hover:scale-[1.01] group">
           <h2 className="font-bold text-xl mb-1 group-hover:text-emerald-400 transition-colors">Study Schedule - {selectedDate.toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric', year:'numeric'})}</h2>
           <p className="text-sm text-gray-400 mb-5">{filteredTasks.length} tasks for this date</p>
@@ -196,7 +207,6 @@ export default function SmartScheduler() {
           </div>
         </div>
 
-        {/* 3. CALENDAR - ORANGE/PINK 3D */}
         <div className="lg:col-span-3 bg-[#121424] p-5 rounded-2xl border border-white/5 h-fit transition-all duration-500 hover:border-orange-500/40 hover:shadow-[0_20px_60px_-15px_rgba(249,115,22,0.4)] hover:-translate-y-2 hover:rotate-[-0.5deg] hover:scale-[1.02] group">
           <div className="flex justify-between items-center mb-4 gap-1">
             <button onClick={()=>changeYear(-1)} className="px-2.5 py-1.5 bg-white/10 rounded-full hover:bg-orange-500 hover:text-white hover:scale-125 hover:shadow-[0_0_15px_orange] active:scale-75 transition-all cursor-pointer">«</button>
