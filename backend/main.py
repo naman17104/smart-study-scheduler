@@ -52,7 +52,8 @@ def delete_task(task_id: int):
     cur.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
     conn.commit()
     conn.close()
-    return {"status": "deleted", "id": task_id}
+       return {"status": "deleted", "id": task_id}
     @app.get("/")
 def root():
     return {"message": "Backend is running!"}
+       
