@@ -29,7 +29,6 @@ export default function SmartScheduler() {
     setViewDate(now);
     const saved = localStorage.getItem("smart_tasks");
     if(saved){ try{ setTasks(JSON.parse(saved)); }catch(e){} }
-    // Notification permission mango
     if("Notification" in window && Notification.permission === "default"){
       Notification.requestPermission();
     }
@@ -37,39 +36,42 @@ export default function SmartScheduler() {
 
   useEffect(()=>{ if(tasks.length>0 || localStorage.getItem("smart_tasks")) localStorage.setItem("smart_tasks", JSON.stringify(tasks)); },[tasks]);
 
-  // REMINDER CHECKER - Har 10 sec check karega
   useEffect(()=>{
     const check = () => {
       const now = new Date();
       const nowDateStr = now.toDateString();
-      const nowHour = now.getHours(); // 0-23
+      const nowHour = now.getHours();
       const nowMin = now.getMinutes();
 
       tasks.forEach(t=>{
         if(t.notified || t.status!== 'pending') return;
         if(t.date!== nowDateStr) return;
 
-        // Parse "02:15 AM" -> hour/min
         const [timePart, ampmPart] = t.time.split(' ');
         let [h, m] = timePart.split(':').map(Number);
         if(ampmPart === 'PM' && h!== 12) h+=12;
         if(ampmPart === 'AM' && h === 12) h=0;
 
         if(h === nowHour && m === nowMin){
-          // Time aa gaya!
           setNotif(`⏰ Reminder: ${t.subject} - Abhi ka time hai!`);
           setTimeout(()=>setNotif(null), 6000);
           if("Notification" in window && Notification.permission === "granted"){
             new Notification(`Study Time: ${t.subject}`, { body: `${t.time} - ${t.duration}`, icon: "/favicon.ico" });
           }
-          // Sound
-          try{ audioRef.current?.play(); }catch{}
-          // Mark notified taki baar baar na baje
+          // ONLY SOUND CHANGED - LOUD ALARM
+          try{
+            if(audioRef.current){
+              audioRef.current.volume = 1.0;
+              audioRef.current.currentTime = 0;
+              audioRef.current.play();
+              setTimeout(()=>{ audioRef.current?.pause(); }, 5000);
+            }
+          }catch{}
           setTasks(prev => prev.map(x=> x.id===t.id? {...x, notified: true} as any : x));
         }
       });
     };
-    const id = setInterval(check, 10000); // 10 sec
+    const id = setInterval(check, 10000);
     return ()=>clearInterval(id);
   },[tasks]);
 
@@ -91,7 +93,6 @@ export default function SmartScheduler() {
   const selectedDateStr = selectedDate.toDateString();
   const addTask = () => {
     if(!sub) return;
-    // Minute ko 2 digit banao
     const finalMin = String(parseInt(timeMin) || 0).padStart(2,'0');
     const finalTime = `${timeHour}:${finalMin} ${ampm}`;
     const newTask: Task = {id: Date.now(), subject:sub, time: finalTime, duration:dur, status:'pending', date: selectedDateStr, notified: false};
@@ -126,7 +127,8 @@ export default function SmartScheduler() {
 
   return (
     <div className="bg-[#050711] text-white min-h-screen" suppressHydrationWarning>
-      <audio ref={audioRef} src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto" />
+      {/* ONLY SOUND CHANGED - LOUD ALARM */}
+      <audio ref={audioRef} src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" preload="auto" />
       <nav className="flex justify-between items-center p-4 border-b border-white/10 sticky top-0 bg-[#080A14]/80 backdrop-blur-md z-10">
         <h1 className="text-xl font-black">SMART STUDY SCHEDULER <span className="bg-[#6C5CE7] text-xs px-2 py-1 rounded ml-2">PRO</span></h1>
         <div className="flex gap-3">
