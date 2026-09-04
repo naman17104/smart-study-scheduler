@@ -53,3 +53,6 @@ def delete_task(task_id: int):
     conn.commit()
     conn.close()
     return {"status": "deleted", "id": task_id}
+    @app.get("/")
+def root():
+    return {"message": "Backend is running!"}
