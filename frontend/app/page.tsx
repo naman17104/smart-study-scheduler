@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 type Task = { id:number; subject:string; time:string; duration:string; status: 'pending' | 'completed' | 'missed', date: string, reason?: string };
 
 export default function SmartScheduler() {
+  const API_URL = "https://smart-study-scheduler-backend-qtpe.onrender.com";
   const [tasks, setTasks] = useState<Task[]>([]);
   const [sub, setSub] = useState("");
   const [timeHour, setTimeHour] = useState("10");
@@ -30,7 +31,7 @@ export default function SmartScheduler() {
   const quotes = ["🔥 Booom! Ek aur jeet!","💪 Consistency is power.","🚀 Small wins = Big placements.","🎯 Focus ka boss! FAANG pakka hai!","⚡ Discipline > Motivation."];
 
   useEffect(()=>{
-    fetch("http://localhost:8000/api/schedule").then(r=>r.json()).then(d=>{ if(d.tasks) setTasks(d.tasks.map((t:any)=>({...t, status:'pending', date: new Date().toDateString()}))) });
+    fetch("http://${API_URL}/api/schedule").then(r=>r.json()).then(d=>{ if(d.tasks) setTasks(d.tasks.map((t:any)=>({...t, status:'pending', date: new Date().toDateString()}))) });
     if(typeof Notification!== "undefined" && Notification.permission!== "granted") Notification.requestPermission();
   },[]);
 
@@ -67,7 +68,7 @@ export default function SmartScheduler() {
     const finalTime = `${timeHour}:${timeMin} ${ampm}`;
     const newTask: Task = {id: Date.now(), subject:sub, time: finalTime, duration:dur, status:'pending', date: selectedDateStr};
     try{
-      const res = await fetch("http://localhost:8000/api/add_task", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({subject:sub, time: finalTime, duration:dur, date: selectedDateStr}) });
+      const res = await fetch("http://${API_URL}/api/add_task", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({subject:sub, time: finalTime, duration:dur, date: selectedDateStr}) });
       const data = await res.json();
       newTask.id = data.id || newTask.id;
     }catch(e){}
@@ -94,7 +95,7 @@ export default function SmartScheduler() {
   };
 
   const deleteTask = async (id:number) => {
-    try{ await fetch(`http://localhost:8000/api/delete_task/${id}`, {method:"DELETE"}); }catch(e){}
+    try{ await fetch(`http://${API_URL}/api/delete_task/${id}`, {method:"DELETE"}); }catch(e){}
     setTasks(tasks.filter(t=>t.id!==id));
   };
 
