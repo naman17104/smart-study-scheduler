@@ -27,7 +27,8 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             subject TEXT,
             time TEXT,
-            duration TEXT
+            duration TEXT,
+            date TEXT
         )
     """)
     conn.commit()
@@ -39,17 +40,17 @@ init_db()
 def get_tasks():
     conn = get_db()
     cur = conn.cursor()
-    cur.execute("SELECT id, subject, time, duration FROM tasks")
+    cur.execute("SELECT id, subject, time, duration, date FROM tasks")
     rows = cur.fetchall()
     conn.close()
-    tasks = [{"id": r[0], "subject": r[1], "time": r[2], "duration": r[3]} for r in rows]
+    tasks = [{"id": r[0], "subject": r[1], "time": r[2], "duration": r[3], "date": r[4]} for r in rows]
     return tasks
 
 @app.post("/api/add_task")
 def add_task(task: dict):
     conn = get_db()
     cur = conn.cursor()
-    cur.execute("INSERT INTO tasks (subject, time, duration) VALUES (?,?,?)", (task.get("subject"), task.get("time"), task.get("duration")))
+    cur.execute("INSERT INTO tasks (subject, time, duration, date) VALUES (?,?,?,?)", (task.get("subject"), task.get("time"), task.get("duration"), task.get("date")))
     conn.commit()
     new_id = cur.lastrowid
     conn.close()
