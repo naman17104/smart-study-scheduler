@@ -1,6 +1,6 @@
 "use client";
-import { useState, useEffect } from "react";
-type Task = { id:number; subject:string; time:string; duration:string; status: 'pending' | 'completed' | 'missed', date: string };
+import { useState, useEffect, useRef } from "react";
+type Task = { id:number; subject:string; time:string; duration:string; status: 'pending' | 'completed' | 'missed', date: string, notified?: boolean };
 
 export default function SmartScheduler() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -12,7 +12,6 @@ export default function SmartScheduler() {
   const [notif, setNotif] = useState<string|null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [viewDate, setViewDate] = useState<Date | null>(null);
-
   const [pomodoroTime, setPomodoroTime] = useState(25 * 60);
   const [initialTime, setInitialTime] = useState(25 * 60);
   const [isRunning, setIsRunning] = useState(false);
@@ -22,17 +21,57 @@ export default function SmartScheduler() {
   const [showCelebration, setShowCelebration] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editVal, setEditVal] = useState("25");
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // FIX FOR ERROR #418 - Date client pe hi set hogi
   useEffect(()=>{
     const now = new Date();
     setSelectedDate(now);
     setViewDate(now);
     const saved = localStorage.getItem("smart_tasks");
     if(saved){ try{ setTasks(JSON.parse(saved)); }catch(e){} }
+    // Notification permission mango
+    if("Notification" in window && Notification.permission === "default"){
+      Notification.requestPermission();
+    }
   },[]);
 
-  useEffect(()=>{ if(tasks.length>0) localStorage.setItem("smart_tasks", JSON.stringify(tasks)); },[tasks]);
+  useEffect(()=>{ if(tasks.length>0 || localStorage.getItem("smart_tasks")) localStorage.setItem("smart_tasks", JSON.stringify(tasks)); },[tasks]);
+
+  // REMINDER CHECKER - Har 10 sec check karega
+  useEffect(()=>{
+    const check = () => {
+      const now = new Date();
+      const nowDateStr = now.toDateString();
+      const nowHour = now.getHours(); // 0-23
+      const nowMin = now.getMinutes();
+
+      tasks.forEach(t=>{
+        if(t.notified || t.status!== 'pending') return;
+        if(t.date!== nowDateStr) return;
+
+        // Parse "02:15 AM" -> hour/min
+        const [timePart, ampmPart] = t.time.split(' ');
+        let [h, m] = timePart.split(':').map(Number);
+        if(ampmPart === 'PM' && h!== 12) h+=12;
+        if(ampmPart === 'AM' && h === 12) h=0;
+
+        if(h === nowHour && m === nowMin){
+          // Time aa gaya!
+          setNotif(`⏰ Reminder: ${t.subject} - Abhi ka time hai!`);
+          setTimeout(()=>setNotif(null), 6000);
+          if("Notification" in window && Notification.permission === "granted"){
+            new Notification(`Study Time: ${t.subject}`, { body: `${t.time} - ${t.duration}`, icon: "/favicon.ico" });
+          }
+          // Sound
+          try{ audioRef.current?.play(); }catch{}
+          // Mark notified taki baar baar na baje
+          setTasks(prev => prev.map(x=> x.id===t.id? {...x, notified: true} as any : x));
+        }
+      });
+    };
+    const id = setInterval(check, 10000); // 10 sec
+    return ()=>clearInterval(id);
+  },[tasks]);
 
   useEffect(() => {
     let interval: any;
@@ -52,10 +91,11 @@ export default function SmartScheduler() {
   const selectedDateStr = selectedDate.toDateString();
   const addTask = () => {
     if(!sub) return;
-    const finalTime = `${timeHour}:${timeMin} ${ampm}`;
-    const newTask: Task = {id: Date.now(), subject:sub, time: finalTime, duration:dur, status:'pending', date: selectedDateStr};
-    setTasks([...tasks, newTask]); setSub(""); setNotif(`Added: ${sub}`); setTimeout(()=>setNotif(null), 3000);
-    if(Notification.permission==="granted"){ new Notification(`Reminder set: ${sub} at ${finalTime}`); }
+    // Minute ko 2 digit banao
+    const finalMin = String(parseInt(timeMin) || 0).padStart(2,'0');
+    const finalTime = `${timeHour}:${finalMin} ${ampm}`;
+    const newTask: Task = {id: Date.now(), subject:sub, time: finalTime, duration:dur, status:'pending', date: selectedDateStr, notified: false};
+    setTasks([...tasks, newTask]); setSub(""); setNotif(`Added: ${sub} at ${finalTime}`); setTimeout(()=>setNotif(null), 3000);
   };
 
   const startFocusMode = (task: Task) => {
@@ -69,11 +109,9 @@ export default function SmartScheduler() {
   const filteredTasks = tasks.filter(t => t.date === selectedDateStr);
   const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
   const formatTime = (sec:number) => { const m = Math.floor(sec/60); const s = sec%60; return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; };
-
   const adjustTime = (delta:number) => {
     const newTime = Math.min(7200, Math.max(60, pomodoroTime + delta*60));
-    setPomodoroTime(newTime);
-    if(!isBreak){ setInitialTime(newTime); }
+    setPomodoroTime(newTime); if(!isBreak){ setInitialTime(newTime); }
     setCustomMins(String(Math.floor(newTime/60)));
   };
   const applyCustomTime = () => {
@@ -88,6 +126,7 @@ export default function SmartScheduler() {
 
   return (
     <div className="bg-[#050711] text-white min-h-screen" suppressHydrationWarning>
+      <audio ref={audioRef} src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto" />
       <nav className="flex justify-between items-center p-4 border-b border-white/10 sticky top-0 bg-[#080A14]/80 backdrop-blur-md z-10">
         <h1 className="text-xl font-black">SMART STUDY SCHEDULER <span className="bg-[#6C5CE7] text-xs px-2 py-1 rounded ml-2">PRO</span></h1>
         <div className="flex gap-3">
@@ -95,7 +134,7 @@ export default function SmartScheduler() {
           <button onClick={()=>setIsRunning(!isRunning)} className="px-5 py-2 bg-gradient-to-r from-[#6C5CE7] to-[#A855F7] rounded-full font-bold hover:scale-110 hover:shadow-[0_0_25px_#6C5CE7] transition-all">{isRunning? 'Pause':'Start Focus'}</button>
         </div>
       </nav>
-      {notif && <div className="fixed top-20 right-5 bg-[#6C5CE7] px-6 py-3 rounded-xl z-50">{notif}</div>}
+      {notif && <div className="fixed top-20 right-5 bg-[#6C5CE7] px-6 py-3 rounded-xl z-50 shadow-[0_0_20px_#6C5CE7] animate-bounce">{notif}</div>}
       {showCelebration && <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100]"><div className="bg-gradient-to-br from-[#6C5CE7] to-[#A855F7] p-8 rounded-3xl animate-bounce">🎉 Task Done!</div></div>}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 p-6 max-w-[1600px] mx-auto">
         <div className="lg:col-span-3 space-y-6">
@@ -105,10 +144,10 @@ export default function SmartScheduler() {
             <input value={sub} onChange={e=>setSub(e.target.value)} placeholder="Subject e.g. Python" className="w-full bg-black/50 p-3 rounded-lg mb-3 border border-white/10 outline-none" />
             <div className="flex gap-2 mb-3">
               <div className="flex gap-1 w-[60%] bg-black/50 p-2 rounded-lg border border-white/10 items-center">
-                <select value={timeHour} onChange={e=>setTimeHour(e.target.value)} className="bg-transparent w-1/3 text-center">{Array.from({length:12},(_,i)=>{const h=i+1; return <option key={h} value={String(h).padStart(2,'0')} className="text-black">{String(h).padStart(2,'0')}</option>})}</select>
+                <select value={timeHour} onChange={e=>setTimeHour(e.target.value)} className="bg-transparent w-[35%] text-center outline-none">{Array.from({length:12},(_,i)=>{const h=i+1; return <option key={h} value={String(h).padStart(2,'0')} className="text-black">{String(h).padStart(2,'0')}</option>})}</select>
                 <span>:</span>
-                <select value={timeMin} onChange={e=>setTimeMin(e.target.value)} className="bg-transparent w-1/3 text-center">{["00","15","30","45"].map(m=><option key={m} value={m} className="text-black">{m}</option>)}</select>
-                <select value={ampm} onChange={e=>setAmPm(e.target.value)} className="bg-[#6C5CE7] rounded-md px-2 py-1 font-bold ml-1"><option>AM</option><option>PM</option></select>
+                <input type="number" min="0" max="59" value={timeMin} onChange={e=>{ let v=e.target.value; if(v===""){setTimeMin(""); return;} let num=parseInt(v); if(!isNaN(num) && num>=0 && num<=59) setTimeMin(String(num));}} className="bg-transparent w-[35%] text-center outline-none font-bold" placeholder="00" />
+                <select value={ampm} onChange={e=>setAmPm(e.target.value)} className="bg-[#6C5CE7] rounded-md px-2 py-1 font-bold ml-1 outline-none"><option>AM</option><option>PM</option></select>
               </div>
               <input value={dur} onChange={e=>setDur(e.target.value)} className="w-[40%] bg-black/50 p-3 rounded-lg border border-white/10" />
             </div>
@@ -137,7 +176,6 @@ export default function SmartScheduler() {
               <input type="number" min="1" max="120" value={customMins} onChange={e=>setCustomMins(e.target.value)} className="w-[60%] bg-black/50 p-2.5 rounded-lg border border-white/10 text-center font-bold text-lg focus:border-[#6C5CE7] focus:shadow-[0_0_20px_rgba(108,92,231,0.5)] outline-none" />
               <button onClick={applyCustomTime} className="w-[40%] bg-white text-black font-bold rounded-lg hover:bg-[#6C5CE7] hover:text-white hover:scale-110 hover:shadow-[0_0_20px_#6C5CE7] transition-all">Set Mins</button>
             </div>
-            <p className="text-[10px] text-gray-500 mt-2 text-center">Ab 1-120 tak koi bhi - 27,38,44,39 sab chalega!</p>
           </div>
         </div>
         <div className="lg:col-span-6 bg-[#121424] p-5 rounded-2xl border border-white/5 min-h-[500px]">
@@ -146,7 +184,7 @@ export default function SmartScheduler() {
           <div className="space-y-3">
             {filteredTasks.map(t=>(
               <div key={t.id} className="p-4 rounded-xl flex justify-between items-center border-l-4 bg-black/30 border-[#6C5CE7]">
-                <div><p className="font-bold">{t.subject}</p><p className="text-sm text-gray-400">{t.time} • {t.duration}</p></div>
+                <div><p className="font-bold">{t.subject} {t.notified && <span className="text-[10px] bg-green-500 px-2 py-0.5 rounded-full ml-2">REMINDED</span>}</p><p className="text-sm text-gray-400">{t.time} • {t.duration}</p></div>
                 <div className="flex gap-2">
                   <button onClick={()=>startFocusMode(t)} className="px-3 py-1 bg-[#FFF8E7] text-black rounded-full text-xs font-bold hover:scale-110 transition-all">🍦 Focus Tab</button>
                   <button onClick={()=>startFocusingTask(t)} className="px-3 py-1 bg-gradient-to-r from-[#6C5CE7] to-[#A855F7] rounded-full text-xs font-bold">▶ Focus</button>
