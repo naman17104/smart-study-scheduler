@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 type Task = { id:number; subject:string; time:string; duration:string; status: 'pending' | 'completed' | 'missed', date: string, notified?: boolean };
 const MOTIVATIONAL_QUOTES = ["Boom! Ek aur jeet. Aise hi lage raho!","Great job! Consistency hi success hai.","Wah! Tumne kar dikhaya.","Another step closer to your goal.","Shabash! Focus ka result hai ye."];
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const DURATIONS = ["30 mins", "1 hour", "2 hours", "3 hours", "4 hours", "5 hours"];
 
 export default function SmartScheduler() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -28,6 +29,10 @@ export default function SmartScheduler() {
   const [showAddBox, setShowAddBox] = useState(false);
   const [showMonthList, setShowMonthList] = useState(false);
   const [showYearList, setShowYearList] = useState(false);
+  const [showHourList, setShowHourList] = useState(false);
+  const [showMinList, setShowMinList] = useState(false);
+  const [showAmPmList, setShowAmPmList] = useState(false);
+  const [showDurList, setShowDurList] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(()=>{
@@ -105,18 +110,67 @@ export default function SmartScheduler() {
             <p className="text-xs text-[#6C5CE7] font-bold mb-3">{selectedDate.toLocaleDateString('en-IN', {weekday:'short', day:'numeric', month:'short', year:'numeric'})}</p>
 
             {showAddBox && (
-            <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="animate-in fade-in slide-in-from-top-2 duration-300 relative">
               <input value={sub} onChange={e=>setSub(e.target.value)} placeholder="What would you like to do?" className="w-full bg-black/50 p-3 rounded-lg mb-3 border border-white/10 outline-none focus:border-[#6C5CE7]" autoFocus />
-              <div className="flex gap-2 mb-3">
-                <div className="flex gap-1 w-[60%] bg-black/50 p-2 rounded-lg border border-white/10 items-center">
-                  <select value={timeHour} onChange={e=>setTimeHour(e.target.value)} className="bg-transparent w-[35%] text-center outline-none">{Array.from({length:12},(_,i)=>{const h=i+1; return <option key={h} value={String(h).padStart(2,'0')} className="text-black">{String(h).padStart(2,'0')}</option>})}</select>
-                  <span>:</span>
-                  <input type="number" min="0" max="59" value={timeMin} onChange={e=>{ let v=e.target.value; if(v===""){setTimeMin(""); return;} let num=parseInt(v); if(!isNaN(num) && num>=0 && num<=59) setTimeMin(String(num));}} className="bg-transparent w-[35%] text-center outline-none font-bold" placeholder="00" />
-                  <select value={ampm} onChange={e=>setAmPm(e.target.value)} className="bg-[#6C5CE7] rounded-md px-2 py-1 font-bold ml-1 outline-none"><option>AM</option><option>PM</option></select>
+
+              {/* NEW 3D TIME PICKER */}
+              <div className="flex gap-2 mb-3 relative z-10">
+                <div className="flex gap-1 w-[60%] bg-black/30 p-1.5 rounded-xl border border-white/10 items-center backdrop-blur-md">
+                  {/* HOUR */}
+                  <div className="relative">
+                    <button onClick={()=>{setShowHourList(!showHourList); setShowMinList(false); setShowAmPmList(false); setShowDurList(false);}} className="bg-gradient-to-br from-[#1E213A] to-[#121424] border border-[#6C5CE7]/50 font-black text-[12px] px-2.5 py-1.5 rounded-xl shadow-[0_4px_15px_rgba(108,92,231,0.3)] hover:scale-125 hover:border-pink-500 hover:shadow-[0_0_20px_#EC4899] hover:from-pink-600/30 hover:to-purple-600/30 transition-all duration-300 transform-gpu min-w-[32px]">{timeHour}</button>
+                    {showHourList && (
+                      <div className="absolute top-[115%] left-0 bg-[#0A0C1A] border border-[#6C5CE7]/50 rounded-2xl p-2 w-[70px] z-[60] shadow-[0_20px_40px_rgba(0,0,0,0.8)] backdrop-blur-xl grid grid-cols-1 gap-1 max-h-[180px] overflow-y-auto">
+                        {Array.from({length:12},(_,i)=> String(i+1).padStart(2,'0')).map(h=>{
+                          const isActive = h===timeHour;
+                          return <button key={h} onClick={()=>{setTimeHour(h); setShowHourList(false);}} className={`px-2 py-2 rounded-xl text-[12px] font-black transition-all duration-200 transform-gpu hover:scale-[1.2] hover:translate-x-1 ${isActive? 'bg-gradient-to-r from-[#6C5CE7] to-[#EC4899] text-white shadow-[0_0_15px_#6C5CE7] scale-[1.1]' : 'bg-white/5 hover:bg-[#6C5CE7] hover:text-white hover:shadow-[0_0_15px_rgba(108,92,231,0.6)] text-gray-300'}`}>{h}</button>
+                        })}
+                      </div>
+                    )}
+                  </div>
+                  <span className="font-black text-[#6C5CE7]">:</span>
+                  {/* MIN */}
+                  <div className="relative">
+                    <button onClick={()=>{setShowMinList(!showMinList); setShowHourList(false); setShowAmPmList(false); setShowDurList(false);}} className="bg-gradient-to-br from-[#1E213A] to-[#121424] border border-pink-500/40 font-black text-[12px] px-2.5 py-1.5 rounded-xl shadow-[0_4px_15px_rgba(236,72,153,0.3)] hover:scale-125 hover:border-[#6C5CE7] hover:shadow-[0_0_20px_#6C5CE7] hover:from-purple-600/30 hover:to-pink-600/30 transition-all duration-300 transform-gpu min-w-[32px]">{timeMin}</button>
+                    {showMinList && (
+                      <div className="absolute top-[115%] left-0 bg-[#0A0C1A] border border-pink-500/50 rounded-2xl p-2 w-[70px] z-[60] shadow-[0_20px_40px_rgba(0,0,0,0.8)] backdrop-blur-xl grid grid-cols-1 gap-1 max-h-[180px] overflow-y-auto">
+                        {Array.from({length:60},(_,i)=> String(i).padStart(2,'0')).map(m=>{
+                          const isActive = m===timeMin;
+                          return <button key={m} onClick={()=>{setTimeMin(m); setShowMinList(false);}} className={`px-2 py-1.5 rounded-xl text-[11px] font-black transition-all duration-200 transform-gpu hover:scale-[1.2] ${isActive? 'bg-gradient-to-r from-pink-500 to-[#6C5CE7] text-white shadow-[0_0_15px_#EC4899] scale-[1.1]' : 'bg-white/5 hover:bg-pink-500 hover:text-white text-gray-300'}`}>{m}</button>
+                        })}
+                      </div>
+                    )}
+                  </div>
+                  {/* AM/PM */}
+                  <div className="relative ml-1">
+                    <button onClick={()=>{setShowAmPmList(!showAmPmList); setShowHourList(false); setShowMinList(false); setShowDurList(false);}} className="bg-[#6C5CE7] rounded-lg px-2.5 py-1 font-black text-[11px] shadow-[0_0_15px_#6C5CE7] hover:scale-125 hover:bg-pink-500 hover:shadow-[0_0_20px_#EC4899] transition-all duration-300 transform-gpu">{ampm}</button>
+                    {showAmPmList && (
+                      <div className="absolute top-[115%] left-0 bg-[#0A0C1A] border border-[#6C5CE7]/50 rounded-xl p-1 w-[60px] z-[60] shadow-[0_20px_40px_rgba(0,0,0,0.8)] grid gap-1">
+                        {["AM","PM"].map(a=>{
+                          const isActive = a===ampm;
+                          return <button key={a} onClick={()=>{setAmPm(a); setShowAmPmList(false);}} className={`px-2 py-2 rounded-lg text-[11px] font-black transition-all hover:scale-110 ${isActive? 'bg-[#6C5CE7] text-white' : 'bg-white/10 hover:bg-pink-500 text-gray-300'}`}>{a}</button>
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <input value={dur} onChange={e=>setDur(e.target.value)} className="w-[40%] bg-black/50 p-3 rounded-lg border border-white/10" />
+                {/* DURATION 3D */}
+                <div className="relative w-[40%]">
+                  <button onClick={()=>{setShowDurList(!showDurList); setShowHourList(false); setShowMinList(false); setShowAmPmList(false);}} className="w-full bg-gradient-to-br from-[#1E213A] to-[#121424] border border-white/10 font-bold text-[11px] px-3 py-2 rounded-xl shadow-[0_4px_15px_rgba(0,0,0,0.4)] hover:scale-105 hover:border-[#6C5CE7] hover:shadow-[0_0_20px_rgba(108,92,231,0.5)] transition-all duration-300 transform-gpu">{dur}</button>
+                  {showDurList && (
+                    <div className="absolute top-[115%] right-0 bg-[#0A0C1A] border border-[#6C5CE7]/50 rounded-2xl p-2 w-[120px] z-[60] shadow-[0_20px_40px_rgba(0,0,0,0.8)] backdrop-blur-xl grid gap-1">
+                      {DURATIONS.map(d=>{
+                        const isActive = d===dur;
+                        return <button key={d} onClick={()=>{setDur(d); setShowDurList(false);}} className={`text-left px-3 py-2 rounded-xl text-[11px] font-bold transition-all hover:scale-[1.08] ${isActive? 'bg-gradient-to-r from-[#6C5CE7] to-[#EC4899] text-white shadow-[0_0_15px_#6C5CE7]' : 'bg-white/5 hover:bg-[#6C5CE7] text-gray-300'}`}>{d}</button>
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
+
               <button onClick={addTask} className="w-full py-3 bg-[#6C5CE7] rounded-xl font-bold hover:scale-[1.05] transition-all">Add Task + Reminder</button>
+
+              {(showHourList || showMinList || showAmPmList || showDurList) && <div className="fixed inset-0 z-5" onClick={()=>{setShowHourList(false); setShowMinList(false); setShowAmPmList(false); setShowDurList(false);}}></div>}
             </div>
             )}
             {!showAddBox && <p className="text-[11px] text-gray-500 mt-2">+ icon par click karo task add karne ke liye</p>}
@@ -139,7 +193,12 @@ export default function SmartScheduler() {
           <div className="space-y-3">
             {filteredTasks.map(t=>{
               const isRinging = ringingTaskId === t.id;
-              return (<div key={t.id} className={`p-4 rounded-xl flex justify-between items-center border-l-4 bg-black/30 transition-all duration-300 ${t.status==='completed'? 'border-green-500 opacity-60' : isRinging? 'border-green-400 bg-green-500/20 scale-[1.04] shadow-[0_0_30px_rgba(34,197,94,0.6)] animate-shake' : 'border-[#6C5CE7] hover:border-emerald-400'}`}><div><p className="font-bold">{t.subject} {t.notified && <span className="text-[10px] bg-green-500 px-2 py-0.5 rounded-full ml-2">REMINDED</span>} {t.status==='completed' && <span className="text-[10px] bg-emerald-500 px-2 py-0.5 rounded-full ml-2">DONE</span>} {isRinging && <span className="text-[10px] bg-red-500 animate-pulse px-2 py-0.5 rounded-full ml-2">⏰ NOW!</span>}</p><p className="text-sm text-gray-400">{t.time} • {t.duration}</p></div><div className="flex gap-2 flex-wrap justify-end">{t.status!=='completed' && <button onClick={()=>completeTask(t)} className="px-3 py-1 bg-green-500 text-black rounded-full text-xs font-bold hover:scale-110 transition-all">✓ Complete</button>}<button onClick={()=>startFocusMode(t)} className="px-3 py-1 bg-[#FFF8E7] text-black rounded-full text-xs font-bold hover:scale-110 transition-all">🍦 Focus Tab</button><button onClick={()=>startFocusingTask(t)} className="px-3 py-1 bg-gradient-to-r from-[#6C5CE7] to-[#A855F7] rounded-full text-xs font-bold">▶ Focus</button><button onClick={()=>deleteTask(t.id)} className="px-3 py-1 bg-white/10 rounded-full text-xs hover:bg-red-600">🗑</button></div></div>)})}
+              return (<div key={t.id} className={`p-4 rounded-xl flex justify-between items-center border-l-4 bg-black/30 transition-all duration-300 ${t.status==='completed'? 'border-green-500 opacity-60' : isRinging? 'border-green-400 bg-green-500/20 scale-[1.04] shadow-[0_0_30px_rgba(34,197,94,0.6)] animate-shake' : 'border-[#6C5CE7] hover:border-emerald-400'}`}><div><p className="font-bold">{t.subject} {t.notified && <span className="text-[10px] bg-green-500 px-2 py-0.5 rounded-full ml-2">REMINDED</span>} {t.status==='completed' && <span className="text-[10px] bg-emerald-500 px-2 py-0.5 rounded-full ml-2">DONE</span>} {isRinging && <span className="text-[10px] bg-red-500 animate-pulse px-2 py-0.5 rounded-full ml-2">⏰ NOW!</span>}</p><p className="text-sm text-gray-400">{t.time} • {t.duration}</p></div><div className="flex gap-2 flex-wrap justify-end">
+              {t.status!=='completed' && <button onClick={()=>completeTask(t)} className="px-3 py-1 bg-green-500 text-black rounded-full text-xs font-bold hover:scale-125 hover:shadow-[0_0_20px_#22c55e] hover:-translate-y-1 transition-all duration-300 transform-gpu">✓ Complete</button>}
+              <button onClick={()=>startFocusMode(t)} className="px-3 py-1 bg-[#FFF8E7] text-black rounded-full text-xs font-bold hover:scale-125 hover:shadow-[0_0_20px_#FFF8E7] hover:-translate-y-1 transition-all duration-300 transform-gpu">🍦 Focus Tab</button>
+              <button onClick={()=>startFocusingTask(t)} className="px-3 py-1 bg-gradient-to-r from-[#6C5CE7] to-[#A855F7] rounded-full text-xs font-bold hover:scale-125 hover:shadow-[0_0_25px_#6C5CE7] hover:-translate-y-1 hover:from-[#A855F7] hover:to-[#EC4899] transition-all duration-300 transform-gpu">▶ Focus</button>
+              <button onClick={()=>deleteTask(t.id)} className="px-3 py-1 bg-white/10 rounded-full text-xs hover:bg-red-600 hover:scale-110 transition-all">🗑</button>
+              </div></div>)})}
           </div>
         </div>
 
