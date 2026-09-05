@@ -65,16 +65,8 @@ export default function SmartScheduler() {
           if("Notification" in window && Notification.permission === "granted"){
             new Notification(`Study Time: ${t.subject}`, { body: `${t.time} - ${t.duration} - Abhi shuru karo!` });
           }
-          try{
-            if(audioRef.current){
-              audioRef.current.volume = 1.0;
-              audioRef.current.currentTime = 0;
-              audioRef.current.play();
-              setTimeout(()=>{ audioRef.current?.pause(); }, 5000);
-            }
-          }catch{}
-          setRingingTaskId(t.id);
-          setTimeout(()=> setRingingTaskId(null), 5000);
+          try{ if(audioRef.current){ audioRef.current.volume=1.0; audioRef.current.currentTime=0; audioRef.current.play(); setTimeout(()=>{audioRef.current?.pause();},5000);} }catch{}
+          setRingingTaskId(t.id); setTimeout(()=>setRingingTaskId(null),5000);
           setTasks(prev => prev.map(x=> x.id===t.id? {...x, notified: true} as any : x));
         }
       });
@@ -85,11 +77,9 @@ export default function SmartScheduler() {
 
   useEffect(() => {
     let interval: any;
-    if (isRunning && pomodoroTime > 0) {
-      interval = setInterval(() => setPomodoroTime(t => t - 1), 1000);
-    } else if (isRunning && pomodoroTime === 0) {
-      setShowCelebration(true);
-      setCelebrationText(MOTIVATIONAL_QUOTES[Math.floor(Math.random()*MOTIVATIONAL_QUOTES.length)]);
+    if (isRunning && pomodoroTime > 0) { interval = setInterval(() => setPomodoroTime(t => t - 1), 1000); }
+    else if (isRunning && pomodoroTime === 0) {
+      setShowCelebration(true); setCelebrationText(MOTIVATIONAL_QUOTES[Math.floor(Math.random()*MOTIVATIONAL_QUOTES.length)]);
       setTimeout(() => setShowCelebration(false), 4000);
       if(currentFocusTask){ setTasks(prev => prev.map(x=> x.id===currentFocusTask.id? {...x, status:'completed'} as any : x)); }
       setIsRunning(false); setPomodoroTime(isBreak? initialTime : 5*60); setIsBreak(!isBreak);
@@ -107,18 +97,12 @@ export default function SmartScheduler() {
     const newTask: Task = {id: Date.now(), subject:sub, time: finalTime, duration:dur, status:'pending', date: selectedDateStr, notified: false};
     setTasks([...tasks, newTask]); setSub(""); setNotif(`Added: ${sub} at ${finalTime}`); setTimeout(()=>setNotif(null), 3000);
   };
-
   const completeTask = (task: Task) => {
     setTasks(prev => prev.map(x=> x.id===task.id? {...x, status:'completed'} as any : x));
     setCelebrationText(MOTIVATIONAL_QUOTES[Math.floor(Math.random()*MOTIVATIONAL_QUOTES.length)]);
-    setShowCelebration(true);
-    setTimeout(()=>setShowCelebration(false), 4000);
+    setShowCelebration(true); setTimeout(()=>setShowCelebration(false),4000);
   }
-
-  const startFocusMode = (task: Task) => {
-    localStorage.setItem("focus_task", JSON.stringify(task))
-    window.open("/focus", "_blank")
-  }
+  const startFocusMode = (task: Task) => { localStorage.setItem("focus_task", JSON.stringify(task)); window.open("/focus", "_blank") }
   const startFocusingTask = (task: Task) => { setCurrentFocusTask(task); setIsBreak(false); setIsRunning(true); setPomodoroTime(initialTime); };
   const deleteTask = (id:number) => setTasks(tasks.filter(t=>t.id!==id));
   const changeMonth = (delta: number) => setViewDate(prev => { const d = new Date(prev!); d.setMonth(prev!.getMonth()+delta); return d; });
@@ -126,24 +110,13 @@ export default function SmartScheduler() {
   const filteredTasks = tasks.filter(t => t.date === selectedDateStr);
   const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
   const formatTime = (sec:number) => { const m = Math.floor(sec/60); const s = sec%60; return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; };
-  const adjustTime = (delta:number) => {
-    const newTime = Math.min(7200, Math.max(60, pomodoroTime + delta*60));
-    setPomodoroTime(newTime); if(!isBreak){ setInitialTime(newTime); }
-    setCustomMins(String(Math.floor(newTime/60)));
-  };
-  const applyCustomTime = () => {
-    const m = parseInt(customMins);
-    if(!isNaN(m) && m>=1 && m<=120){ setPomodoroTime(m*60); setInitialTime(m*60); setIsRunning(false); setNotif(`Timer set to ${m} mins`); setTimeout(()=>setNotif(null), 2000); }
-  };
-  const saveDirectEdit = () => {
-    const m = parseInt(editVal);
-    if(!isNaN(m) && m>=1 && m<=120){ setPomodoroTime(m*60); setInitialTime(m*60); setCustomMins(String(m)); }
-    setIsEditing(false);
-  };
+  const adjustTime = (delta:number) => { const newTime = Math.min(7200, Math.max(60, pomodoroTime + delta*60)); setPomodoroTime(newTime); if(!isBreak){ setInitialTime(newTime); } setCustomMins(String(Math.floor(newTime/60))); };
+  const applyCustomTime = () => { const m = parseInt(customMins); if(!isNaN(m) && m>=1 && m<=120){ setPomodoroTime(m*60); setInitialTime(m*60); setIsRunning(false); setNotif(`Timer set to ${m} mins`); setTimeout(()=>setNotif(null), 2000); } };
+  const saveDirectEdit = () => { const m = parseInt(editVal); if(!isNaN(m) && m>=1 && m<=120){ setPomodoroTime(m*60); setInitialTime(m*60); setCustomMins(String(m)); } setIsEditing(false); };
 
   return (
     <div className="bg-[#050711] text-white min-h-screen" suppressHydrationWarning>
-      <style>{`@keyframes shake { 0%, 100% { transform: translateX(0) scale(1.05); } 25% { transform: translateX(-6px) scale(1.08); } 75% { transform: translateX(6px) scale(1.08); } }.animate-shake { animation: shake 0.3s infinite; }`}</style>
+      <style>{`@keyframes shake { 0%,100%{transform:translateX(0) scale(1.05);}25%{transform:translateX(-6px) scale(1.08);}75%{transform:translateX(6px) scale(1.08);}}.animate-shake{animation:shake 0.3s infinite;}`}</style>
       <audio ref={audioRef} src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" preload="auto" />
       <nav className="flex justify-between items-center p-4 border-b border-white/10 sticky top-0 bg-[#080A14]/80 backdrop-blur-md z-10">
         <h1 className="text-xl font-black">SMART STUDY SCHEDULER <span className="bg-[#6C5CE7] text-xs px-2 py-1 rounded ml-2">PRO</span></h1>
@@ -157,10 +130,14 @@ export default function SmartScheduler() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 p-6 max-w-[1600px] mx-auto">
         <div className="lg:col-span-3 space-y-6">
-          <div className="bg-[#121424] p-5 rounded-2xl border border-white/5 transition-all duration-300 transform-gpu hover:-translate-y-2 hover:scale-[1.02] hover:border-[#6C5CE7] hover:shadow-[0_20px_40px_-10px_rgba(108,92,231,0.6)]">
-            <h2 className="font-bold mb-2">+ Add for</h2>
+          {/* ====== ONLY THIS BOX CHANGED AS PER YOUR SAY ====== */}
+          <div className="bg-[#121424] p-5 rounded-2xl border border-white/5 transition-all duration-300 transform-gpu hover:-translate-y-2 hover:scale-[1.02] hover:border-[#6C5CE7] hover:shadow-[0_20px_40px_-10px_rgba(108,92,231,0.6)] group">
+            <div className="flex items-center gap-3 mb-2 cursor-default">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#FF6B6B] via-[#6C5CE7] to-[#00D2FF] flex items-center justify-center text-[22px] font-black shadow-[0_5px_15px_rgba(108,92,231,0.5)] border border-white/20 transition-all duration-300 transform-gpu group-hover:scale-[1.35] group-hover:rotate-[90deg] group-hover:shadow-[0_0_25px_#6C5CE7] group-hover:from-[#00D2FF] group-hover:to-[#6C5CE7]">+</div>
+              <h2 className="font-bold text-[17px] tracking-wide">Add Task</h2>
+            </div>
             <p className="text-xs text-[#6C5CE7] font-bold mb-3">{selectedDate.toLocaleDateString('en-IN', {weekday:'short', day:'numeric', month:'short', year:'numeric'})}</p>
-            <input value={sub} onChange={e=>setSub(e.target.value)} placeholder="Subject e.g. Python" className="w-full bg-black/50 p-3 rounded-lg mb-3 border border-white/10 outline-none" />
+            <input value={sub} onChange={e=>setSub(e.target.value)} placeholder="What would you like to do?" className="w-full bg-black/50 p-3 rounded-lg mb-3 border border-white/10 outline-none focus:border-[#6C5CE7]" />
             <div className="flex gap-2 mb-3">
               <div className="flex gap-1 w-[60%] bg-black/50 p-2 rounded-lg border border-white/10 items-center">
                 <select value={timeHour} onChange={e=>setTimeHour(e.target.value)} className="bg-transparent w-[35%] text-center outline-none">{Array.from({length:12},(_,i)=>{const h=i+1; return <option key={h} value={String(h).padStart(2,'0')} className="text-black">{String(h).padStart(2,'0')}</option>})}</select>
@@ -177,14 +154,7 @@ export default function SmartScheduler() {
             <h2 className="font-bold mb-1">⏰ Focus Clock</h2>
             <p className="text-xs text-gray-400 mb-3">{currentFocusTask? `Focusing: ${currentFocusTask.subject}` : "Click time to edit"}</p>
             <div className="bg-black/50 rounded-xl p-4 text-center border border-white/10 mb-4">
-              {isEditing? (
-                <div className="flex gap-2 justify-center items-center">
-                  <input autoFocus type="number" value={editVal} onChange={e=>setEditVal(e.target.value)} className="w-20 bg-black p-2 rounded-lg border border-orange-500 text-center text-2xl font-black" />
-                  <button onClick={saveDirectEdit} className="px-3 py-2 bg-orange-500 rounded-lg font-bold">OK</button>
-                </div>
-              ) : (
-                <div onClick={()=>{setEditVal(String(Math.floor(pomodoroTime/60))); setIsEditing(true);}} className="text-5xl font-black tracking-widest tabular-nums cursor-pointer hover:text-orange-400 transition-all">{formatTime(pomodoroTime)}</div>
-              )}
+              {isEditing? (<div className="flex gap-2 justify-center items-center"><input autoFocus type="number" value={editVal} onChange={e=>setEditVal(e.target.value)} className="w-20 bg-black p-2 rounded-lg border border-orange-500 text-center text-2xl font-black" /><button onClick={saveDirectEdit} className="px-3 py-2 bg-orange-500 rounded-lg font-bold">OK</button></div>) : (<div onClick={()=>{setEditVal(String(Math.floor(pomodoroTime/60))); setIsEditing(true);}} className="text-5xl font-black tracking-widest tabular-nums cursor-pointer hover:text-orange-400 transition-all">{formatTime(pomodoroTime)}</div>)}
               <div className="flex justify-center gap-2 mt-4">
                 <button onClick={()=>adjustTime(-1)} className="px-4 py-1.5 bg-white/10 rounded-full text-sm font-bold hover:bg-orange-500 transition-all">-1m</button>
                 <button onClick={()=>setIsRunning(!isRunning)} className="px-6 py-1.5 bg-gradient-to-r from-orange-500 to-amber-500 rounded-full text-sm font-bold hover:scale-110 transition-all">{isRunning? 'Pause':'Start'}</button>
@@ -209,7 +179,7 @@ export default function SmartScheduler() {
               <div key={t.id} className={`p-4 rounded-xl flex justify-between items-center border-l-4 bg-black/30 transition-all duration-300 ${t.status==='completed'? 'border-green-500 opacity-60' : isRinging? 'border-green-400 bg-green-500/20 scale-[1.04] shadow-[0_0_30px_rgba(34,197,94,0.6)] animate-shake' : 'border-[#6C5CE7] hover:border-emerald-400'}`}>
                 <div><p className="font-bold">{t.subject} {t.notified && <span className="text-[10px] bg-green-500 px-2 py-0.5 rounded-full ml-2">REMINDED</span>} {t.status==='completed' && <span className="text-[10px] bg-emerald-500 px-2 py-0.5 rounded-full ml-2">DONE</span>} {isRinging && <span className="text-[10px] bg-red-500 animate-pulse px-2 py-0.5 rounded-full ml-2">⏰ NOW!</span>}</p><p className="text-sm text-gray-400">{t.time} • {t.duration}</p></div>
                 <div className="flex gap-2 flex-wrap justify-end">
-                  {t.status!=='completed' && <button onClick={()=>completeTask(t)} className="px-3 py-1 bg-green-500 text-black rounded-full text-xs font-bold hover:scale-110 hover:bg-green-400 transition-all">✓ Complete</button>}
+                  {t.status!=='completed' && <button onClick={()=>completeTask(t)} className="px-3 py-1 bg-green-500 text-black rounded-full text-xs font-bold hover:scale-110 transition-all">✓ Complete</button>}
                   <button onClick={()=>startFocusMode(t)} className="px-3 py-1 bg-[#FFF8E7] text-black rounded-full text-xs font-bold hover:scale-110 transition-all">🍦 Focus Tab</button>
                   <button onClick={()=>startFocusingTask(t)} className="px-3 py-1 bg-gradient-to-r from-[#6C5CE7] to-[#A855F7] rounded-full text-xs font-bold">▶ Focus</button>
                   <button onClick={()=>deleteTask(t.id)} className="px-3 py-1 bg-white/10 rounded-full text-xs hover:bg-red-600">🗑</button>
