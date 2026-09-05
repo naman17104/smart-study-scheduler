@@ -169,7 +169,7 @@ export default function SmartScheduler() {
                 </button>
                 {showYearList && (
                   <div className="absolute top-[110%] right-0 bg-[#0A0C1A] border border-pink-500/50 rounded-2xl p-2 w-[110px] z-50 shadow-[0_20px_40px_rgba(0,0,0,0.8)] backdrop-blur-xl grid grid-cols-2 gap-1 max-h-[220px] overflow-y-auto">
-                    {Array.from({length: 12}, (_,i)=> new Date().getFullYear()-2 + i).map(y=>{
+                    {Array.from({length: 10}, (_,i)=> 2026 + i).map(y=>{
                       const isActive = y===viewDate.getFullYear();
                       return <button key={y} onClick={()=>{const d=new Date(viewDate); d.setFullYear(y); setViewDate(d); setShowYearList(false);}} className={`px-2 py-2 rounded-xl text-[12px] font-black transition-all duration-200 transform-gpu hover:scale-[1.15] ${isActive? 'bg-gradient-to-r from-pink-500 to-[#6C5CE7] text-white shadow-[0_0_15px_#EC4899] scale-[1.1]' : 'bg-white/5 hover:bg-pink-500 hover:text-white hover:shadow-[0_0_15px_rgba(236,72,153,0.6)] text-gray-300'}`}>{y}</button>
                     })}
