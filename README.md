@@ -3,7 +3,8 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-88.9%25-blue)
 ![Python](https://img.shields.io/badge/Python-7%25-yellow)
 ![Vercel](https://img.shields.io/badge/Deployed_on-Vercel-black)
-
+## 📸 Dashboard Preview
+![Dashboard Preview](./image.png)
 > My 3D Study Scheduler with calendar - Plan your studies smartly, visually, and efficiently.
 
 A modern, 3D-enabled study scheduler with calendar integration to help students organize subjects, set deadlines, and track progress visually. No more messy to-do lists.
